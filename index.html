@@ -48,9 +48,9 @@
     
     .title.is-3 {
         color: var(--primary-color); /* 글자색을 대표색으로 */
-        border-left: none;           /* 띠 제거 */
+        border-left: none;            /* 띠 제거 */
         padding-left: 0;
-        font-weight: 800;            /* 조금 더 굵게 강조 */
+        font-weight: 800;             /* 조금 더 굵게 강조 */
     }
     .content b, .content strong {
         color: var(--primary-color);
@@ -75,8 +75,6 @@
         justify-content: center;
         align-items: center; 
         width: 100%;
-        /* [수정] 부모 높이 제한 제거 (내용물에 맞춤) */
-        /* height: 80vh; */
         margin-bottom: 2rem;
     }
 
@@ -284,8 +282,8 @@
           <div class="content has-text-centered mb-5">
             <p class="is-size-5">Captured with <b>Samsung Galaxy S23+</b> (via Pro Video Mode) at <b>Gangnam-daero</b>, Seoul</p>
             <p class="is-size-6 text-gray-500">
-                Drag the slider to compare <b>Blurry LR Input</b> vs <b>FMA-Net++</b><br>
-                <span class="is-size-7">(Click to <b>Play/Pause</b>, Scroll/Pinch to <b>Zoom</b>, Drag to <b>Pan</b>)</span>
+                Drag the slider handle to compare <b>Blurry LR Input</b> vs <b>FMA-Net++</b><br>
+                <span class="is-size-7">(Tap anywhere to <b>Play/Pause</b>, Scroll/Pinch to <b>Zoom</b>, Drag to <b>Pan</b>)</span>
             </p>
           </div>
 
@@ -435,7 +433,7 @@
   -->
 
   <!-- BibTeX Section -->
-   <!--
+    <!--
   <section class="section" id="BibTeX">
     <div class="container is-max-desktop content">
       <h2 class="title">BibTeX</h2>
@@ -512,6 +510,15 @@
     let initialScale = 1;
     let lastTouchX = 0;
     let lastTouchY = 0;
+    
+    // [Tap vs Drag 감지용 변수]
+    let touchStartTime = 0;
+    let touchStartXForTap = 0;
+    let touchStartYForTap = 0;
+    let isTouchDevice = false; // 터치 디바이스 여부 감지
+    
+    // 슬라이더 드래그 중인지 여부
+    let isSliderDragging = false;
     
     // --- 탭 생성 ---
     const tabContainer = document.getElementById('scene-tabs-container');
@@ -597,42 +604,63 @@
         scaleIndicator.style.opacity = state.scale > 1.01 ? 1 : 0;
     }
 
-    // --- [추가] 모바일 터치 이벤트 핸들러 ---
+    // --- [개선된] 모바일 터치 이벤트 핸들러 (Tap vs Drag 분리) ---
     container.addEventListener('touchstart', (e) => {
+        isTouchDevice = true; // 터치 기기임을 명시
+
         if (e.touches.length === 2) {
             // Pinch Start
             e.preventDefault();
             initialPinchDistance = getDistance(e.touches[0], e.touches[1]);
             initialScale = state.scale;
         } else if (e.touches.length === 1) {
-            // Pan or Slider Start
-            // 1.0배율일 땐 슬라이더만 작동하도록 함 (UX 분기)
-            if (state.scale > 1.01) {
-                 // Pan 모드
-                 lastTouchX = e.touches[0].clientX;
-                 lastTouchY = e.touches[0].clientY;
-                 container.classList.add('is-dragging'); // 커서 변경 등 시각적 피드백
+            const touch = e.touches[0];
+            const rect = container.getBoundingClientRect();
+            
+            // 탭 감지용 데이터 저장
+            touchStartTime = new Date().getTime();
+            touchStartXForTap = touch.clientX;
+            touchStartYForTap = touch.clientY;
+            
+            // 현재 터치 X 위치 (컨테이너 내부 좌표)
+            const touchX = touch.clientX - rect.left;
+            
+            // 현재 슬라이더의 스크린상 X 위치
+            const sliderScreenX = rect.width * sliderPos;
+            
+            // 슬라이더 핸들 근처인지 확인 (좌우 40px 여유)
+            const isNearSlider = Math.abs(touchX - sliderScreenX) < 40;
+            
+            if (isNearSlider) {
+                // [Case 1] 슬라이더 드래그 모드 진입
+                isSliderDragging = true;
+                e.preventDefault(); // 스크롤 등 브라우저 기본 동작 차단
+                container.classList.add('is-dragging'); 
             } else {
-                 // Slider 모드: updateSliderFromEvent 호출
-                 updateSliderFromEvent(e.touches[0]);
+                // [Case 2] 일반 화면 터치 (Pan 혹은 Tap 대기)
+                // 줌 상태일 때는 Pan 준비
+                if (state.scale > 1.01) {
+                     lastTouchX = touch.clientX;
+                     lastTouchY = touch.clientY;
+                     container.classList.add('is-dragging');
+                }
+                // 1.0 배율일 때는 아무것도 하지 않고 touchend를 기다림 (Tap 판별)
             }
         }
     }, { passive: false });
 
     container.addEventListener('touchmove', (e) => {
         if (e.touches.length === 2 && initialPinchDistance) {
-            // Pinch Zooming
+            // Pinch Zooming logic
             e.preventDefault();
             const currentDistance = getDistance(e.touches[0], e.touches[1]);
             const scaleChange = currentDistance / initialPinchDistance;
             const newScale = Math.min(Math.max(MIN_SCALE, initialScale * scaleChange), MAX_SCALE);
             
-            // 줌 중심점 계산 (두 손가락의 중점)
             const rect = container.getBoundingClientRect();
             const centerX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
             const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
             
-            // 줌 중심 유지하며 스케일 변경
             const vx = (centerX - state.pX) / state.scale;
             const vy = (centerY - state.pY) / state.scale;
             
@@ -643,8 +671,12 @@
             clampPan();
             updateTransform();
         } else if (e.touches.length === 1) {
-            if (state.scale > 1.01) {
-                // Panning
+            if (isSliderDragging) {
+                // 슬라이더 이동
+                e.preventDefault();
+                updateSliderFromEvent(e.touches[0]);
+            } else if (state.scale > 1.01) {
+                // Pan 이동
                 e.preventDefault();
                 const dx = e.touches[0].clientX - lastTouchX;
                 const dy = e.touches[0].clientY - lastTouchY;
@@ -657,19 +689,31 @@
                 
                 clampPan();
                 updateTransform();
-            } else {
-                // Slider Moving
-                e.preventDefault(); // 스크롤 방지
-                if (container.contains(e.target)) {
-                    updateSliderFromEvent(e.touches[0]);
-                }
             }
         }
     }, { passive: false });
     
     container.addEventListener('touchend', (e) => {
+        // 핀치나 드래그 종료 정리
         initialPinchDistance = null;
         container.classList.remove('is-dragging');
+        
+        // [중요] Tap(탭) 감지 로직
+        // 슬라이더 드래그 중이 아니었고, 손가락을 뗐을 때 실행
+        if (!isSliderDragging && e.changedTouches.length > 0) {
+            const touch = e.changedTouches[0];
+            const diffTime = new Date().getTime() - touchStartTime;
+            const diffX = Math.abs(touch.clientX - touchStartXForTap);
+            const diffY = Math.abs(touch.clientY - touchStartYForTap);
+
+            // 조건: 300ms 이내에 떼고, 움직임이 10px 미만이어야 "Tap"으로 인정
+            if (diffTime < 300 && diffX < 10 && diffY < 10) {
+                e.preventDefault(); // Click 이벤트 중복 발생 방지
+                togglePlayPause();
+            }
+        }
+
+        isSliderDragging = false; // 드래그 상태 해제
     });
 
     function getDistance(touch1, touch2) {
@@ -679,7 +723,7 @@
     }
 
 
-    // --- PC 마우스 이벤트 (기존 유지) ---
+    // --- PC 마우스 이벤트 ---
     container.addEventListener('wheel', (e) => {
         e.preventDefault();
         const rect = container.getBoundingClientRect();
@@ -700,6 +744,9 @@
     let lastX = 0, lastY = 0;
     
     container.addEventListener('mousedown', (e) => {
+        // PC 마우스 동작:
+        // 1. 줌 상태면 Pan 시작
+        // 2. 아니면 슬라이더 이동 (즉시 점프 허용)
         if (state.scale > 1) {
             isDragging = true;
             lastX = e.clientX;
@@ -745,10 +792,15 @@
     }
     
     function updateSliderFromEvent(e) {
-        if (state.scale > 1 && (e.buttons === undefined || e.buttons === 1)) return;
-        // 마우스 이벤트 객체든 터치 객체든 clientX, clientY를 가짐
+        // 모바일 드래그 중이 아니거나 (PC), 모바일에서 드래그 플래그가 켜진 경우에만 실행
+        // PC Pan 중에는 실행 안됨
+        if (!isSliderDragging && isTouchDevice && e.type.startsWith('touch')) return;
+        
+        // [수정] 데스크탑 모드에서 줌 상태일 때 마우스 이동으로 슬라이더가 안 움직이는 문제 수정
+        // 이전 코드: if (!isSliderDragging && state.scale > 1 && (e.type === 'mousemove')) return; 
+        // -> 이 라인을 삭제하여 데스크탑 마우스 Hover 시 슬라이더 이동 허용
+
         const rect = container.getBoundingClientRect();
-        // 범위 체크
         if (e.clientX < rect.left || e.clientX > rect.right) return;
         
         let x = e.clientX - rect.left;
@@ -759,17 +811,28 @@
 
     let clickStartX = 0;
     container.addEventListener('mousedown', (e) => clickStartX = e.clientX);
+    
+    // [중요] PC 전용 Click 이벤트 처리
     container.addEventListener('click', (e) => {
+        // 터치 디바이스에서는 touchend에서 Tap을 처리하므로, 여기서는 무시
+        if (isTouchDevice) return;
+
+        // 마우스 클릭 시 흔들림(드래그)이 적었을 때만 Play/Pause
         if (Math.abs(e.clientX - clickStartX) < 5) {
-            if (video.paused) {
-                video.play();
-                container.classList.remove('paused');
-            } else {
-                video.pause();
-                container.classList.add('paused');
-            }
+            togglePlayPause();
         }
     });
+
+    // Play/Pause 토글 공통 함수
+    function togglePlayPause() {
+        if (video.paused) {
+            video.play();
+            container.classList.remove('paused');
+        } else {
+            video.pause();
+            container.classList.add('paused');
+        }
+    }
 
     function changeScene(index) {
         video.src = scenes[index];
