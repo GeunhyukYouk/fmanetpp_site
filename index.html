@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="description" content="FMA-Net++: Motion- and Exposure-Aware Real-World Joint Video Super-Resolution and Deblurring">
+  <meta name="keywords" content="FMA-Net, Video Super-Resolution, Deblurring, CVPR 2026">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <!-- SNS 공유용 메타 태그 -->
+  <meta property="og:title" content="FMA-Net++: Motion- and Exposure-Aware Real-World Joint Video Super-Resolution and Deblurring">
+  <meta property="og:description" content="We present FMA-Net++, a framework for joint video super-resolution and deblurring that explicitly models motion and dynamic exposure.">
+  <meta property="og:image" content="./static/images/framework.png">
+  <meta property="og:image:alt" content="FMA-Net++ Architecture">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="FMA-Net++ Project Page">
+  <meta name="twitter:description" content="Motion- and Exposure-Aware Real-World Joint Video Super-Resolution and Deblurring">
+  <meta name="twitter:image" content="./static/images/framework.png">
+
+  <title>FMA-Net++ Project Page</title>
+
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237c3aed' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'%3E%3C/circle%3E%3Cline x1='14.31' y1='8' x2='20.05' y2='17.94'%3E%3C/line%3E%3Cline x1='9.69' y1='8' x2='21.17' y2='8'%3E%3C/line%3E%3Cline x1='7.38' y1='12' x2='13.12' y2='2.06'%3E%3C/line%3E%3Cline x1='9.69' y1='16' x2='3.95' y2='6.06'%3E%3C/line%3E%3Cline x1='14.31' y1='16' x2='2.83' y2='16'%3E%3C/line%3E%3Cline x1='16.62' y1='12' x2='10.88' y2='21.94'%3E%3C/line%3E%3C/svg%3E">
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro" rel="stylesheet">
+
+  <!-- Bulma CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+  
+  <!-- FontAwesome & Academicons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="./static/css/index.css">
+  
+  <style>
+    :root {
+        --primary-color: #000000; 
+        --gradient-start: #2563eb;
+        --gradient-end: #7c3aed;
+    }
+    .text-gradient { background: -webkit-linear-gradient(0deg, #2563eb, #7c3aed); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .text-gradient-secondary { background: -webkit-linear-gradient(0deg, #7c3aed, #4c1d95); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .title-secondary { color: #363636; text-shadow: 1px 1px 2px rgba(0,0,0,0.1); }
+    .hrbp-responsive { width: 50%; }
+    @media screen and (max-width: 768px) { .hrbp-responsive { width: 100%; } }
+    
+    .title.is-3 {
+        color: var(--primary-color); /* 글자색을 대표색으로 */
+        border-left: none;           /* 띠 제거 */
+        padding-left: 0;
+        font-weight: 800;            /* 조금 더 굵게 강조 */
+    }
+    .content b, .content strong {
+        color: var(--primary-color);
+        font-weight: 700;
+    }
+
+    @keyframes aperture-breathe {
+        0% { transform: scale(1) rotate(0deg); }
+        50% { transform: scale(0.92) rotate(15deg); } /* 살짝 조여지며 회전 */
+        100% { transform: scale(1) rotate(0deg); }
+    }
+    
+    /* 애니메이션 클래스 적용 */
+    .aperture-icon svg {
+        animation: aperture-breathe 4s ease-in-out infinite;
+        transform-origin: center; 
+    }
+
+    /* --- Interactive Viewer Styles (Updated) --- */
+    .video-container-wrapper {
+        display: flex;
+        justify-content: center;
+        align-items: center; 
+        width: 100%;
+        /* [수정] 부모 높이 제한 제거 (내용물에 맞춤) */
+        /* height: 80vh; */
+        margin-bottom: 2rem;
+    }
+
+    /* 메인 컨테이너 */
+    .video-compare-container {
+        position: relative;
+        width: auto; /* 너비 자동 */
+        
+        /* [수정] 높이를 자동(auto)으로 하고, 최대 높이만 제한 */
+        height: auto; 
+        max-height: 80vh; 
+        max-width: 100%;
+
+        border-radius: 10px; background: #000;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        overflow: hidden; 
+        user-select: none;
+        transition: max-width 0.3s ease, aspect-ratio 0.3s ease;
+        
+        /* 기본값 */
+        aspect-ratio: 9 / 16;
+        
+        /* 커서 기본값: Grab */
+        cursor: grab; 
+        
+        /* 모바일 터치 액션 제어 (브라우저 기본 스크롤/줌 방지) */
+        touch-action: none;
+    }
+    
+    /* 드래그 중일 때 커서 */
+    .video-compare-container.is-dragging {
+        cursor: grabbing;
+    }
+
+    .video-compare-container.vertical { 
+        aspect-ratio: 9 / 16; 
+        width: 100%;
+        max-width: 320px; 
+    }
+    .video-compare-container.horizontal { 
+        aspect-ratio: 16 / 9; 
+        width: 100%;
+        max-width: 800px; 
+    }
+
+    /* [Video Layer Group] Pan/Zoom 변환이 적용되는 레이어 */
+    .video-layer {
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        transform-origin: 0 0; 
+        will-change: transform; 
+    }
+
+    /* 캔버스 공통 */
+    canvas {
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: block;
+    }
+
+    /* 왼쪽 캔버스 (Input) - clip-path로 잘림 */
+    #canvas-left { z-index: 2; }
+    
+    /* 오른쪽 캔버스 (Output) - 배경 */
+    #canvas-right { z-index: 1; }
+
+    /* [UI Layer] 줌/이동의 영향을 받지 않는 고정 레이어 */
+    .ui-layer {
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        pointer-events: none; /* 클릭 통과 */
+        z-index: 10;
+    }
+
+    /* 슬라이더 바 */
+    .slider-bar {
+        position: absolute; top: 0; bottom: 0; width: 2px; background: white;
+        box-shadow: 0 0 5px rgba(0,0,0,0.5); pointer-events: none;
+        left: 50%; 
+    }
+    .slider-handle {
+        position: absolute; top: 50%; left: 0; transform: translate(-50%, -50%);
+        width: 40px; height: 40px; background: white; border-radius: 50%;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; color: #333;
+    }
+
+    /* 라벨 컨테이너 */
+    .label-container {
+        position: absolute; top: 0; bottom: 0; overflow: hidden; pointer-events: none;
+    }
+    #label-clipper-left { left: 0; width: 50%; }
+    #label-clipper-right { right: 0; width: 50%; display: flex; justify-content: flex-end; }
+
+    .video-label {
+        position: absolute; top: 20px; padding: 6px 12px;
+        background-color: rgba(220, 220, 220, 0.6); color: #1a1a1a;
+        font-family: 'Google Sans', sans-serif; font-weight: 700; font-size: 0.95rem;
+        border-radius: 6px; white-space: nowrap; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    .label-left { left: 20px; }
+    .label-right { right: 20px; background-color: rgba(37, 99, 235, 0.7); color: white; }
+
+    #main_video_source { display: none; }
+    
+    .pause-overlay {
+        position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        font-size: 3rem; color: white; opacity: 0; transition: opacity 0.3s; z-index: 30; pointer-events: none;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }
+    .video-compare-container.paused .pause-overlay { opacity: 1; }
+    
+    .zoom-instruction {
+        position: absolute; bottom: 15px; width: 100%; text-align: center;
+        color: white; 
+        font-size: 0.8rem; 
+        font-weight: 700; /* 굵게 */
+        pointer-events: none; 
+        z-index: 20; 
+        /* 검은색 테두리 (4방향 그림자) */
+        text-shadow: 
+            -1px -1px 0 #000,  
+             1px -1px 0 #000,
+            -1px  1px 0 #000,
+             1px  1px 0 #000,
+             0 2px 5px rgba(0,0,0,0.5);
+    }
+    
+    .scale-indicator {
+        position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+        padding: 4px 10px; background-color: rgba(0, 0, 0, 0.5); color: white;
+        font-family: 'Google Sans', sans-serif; font-weight: 600; font-size: 0.9rem;
+        border-radius: 4px; pointer-events: none; backdrop-filter: blur(2px); z-index: 20;
+        opacity: 0; transition: opacity 0.3s;
+    }
+    
+    .tabs-wrapper { 
+        display: flex; 
+        flex-direction: column; 
+        align-items: center; 
+        width: 100%;
+        margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-body">
+      <div class="container is-max-widescreen">
+        <div class="columns is-centered">
+          <div class="column has-text-centered">
+            
+            <h1 class="title publication-title" style="font-weight: 800; font-size: 2.4rem;">
+              <span class="icon" style="color: #7c3aed; vertical-align: middle; margin-right: 0px; font-size: 0.9em; width: 1em; height: 1em; position: relative; top: -2px;">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: 100%;">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="14.31" y1="8" x2="20.05" y2="17.94"></line>
+                    <line x1="9.69" y1="8" x2="21.17" y2="8"></line>
+                    <line x1="7.38" y1="12" x2="13.12" y2="2.06"></line>
+                    <line x1="9.69" y1="16" x2="3.95" y2="6.06"></line>
+                    <line x1="14.31" y1="16" x2="2.83" y2="16"></line>
+                    <line x1="16.62" y1="12" x2="10.88" y2="21.94"></line>
+                  </svg>
+              </span>
+              
+              <span class="text-gradient" style="vertical-align: middle;">FMA-Net++: Motion- and Exposure-Aware</span>
+              <br>
+              <span style="color: #4c1d95; text-shadow: 1px 1px 2px rgba(0,0,0,0.05);">
+                  Real-World Joint Video Super-Resolution and Deblurring
+              </span>
+            </h1>
+            
+            <div class="is-size-5 publication-authors">
+              <span class="author-block"><a href="https://sites.google.com/view/geunhyukyouk/">Geunhyuk Youk</a><sup>1</sup>,</span>
+              <span class="author-block"><a href="https://sites.google.com/view/ozbro/">Jihyong Oh</a><sup>2†</sup>,</span>
+              <span class="author-block"><a href="https://www.viclab.kaist.ac.kr/">Munchurl Kim</a><sup>1†</sup></span>
+            </div>
+            
+            <div class="is-size-5 publication-authors">
+              <span class="author-block"><sup>1</sup>Korea Advanced Institute of Science and Technology (KAIST),</span><br>
+              <span class="author-block"><sup>2</sup>Chung-Ang University</span>
+            </div>
+            <div class="is-size-6 publication-authors">
+              <span class="author-block"><sup>†</sup>Co-corresponding authors</span>
+            </div>
+            
+            <div class="column has-text-centered">
+              <div class="publication-links">
+                <span class="link-block"><a href="#" class="external-link button is-normal is-rounded is-dark"><span class="icon"><i class="fas fa-file-pdf"></i></span><span>Paper</span></a></span>
+                <span class="link-block"><a href="#" class="external-link button is-normal is-rounded is-dark"><span class="icon"><i class="ai ai-arxiv"></i></span><span>arXiv</span></a></span>
+                <span class="link-block"><a href="#" class="external-link button is-normal is-rounded is-dark"><span class="icon"><i class="fab fa-youtube"></i></span><span>Demo</span></a></span>
+                <span class="link-block"><a href="#" class="external-link button is-normal is-rounded is-dark"><span class="icon"><i class="fab fa-github"></i></span><span>Code</span></a></span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interactive Demo Section -->
+  <section class="section">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered has-text-centered">
+        <div class="column is-full-width">
+          <h2 class="title is-3">Interactive Real-World Demo</h2>
+          <div class="content has-text-centered mb-5">
+            <p class="is-size-5">Captured with <b>Samsung Galaxy S23+</b> (via Pro Video Mode) at <b>Gangnam-daero</b>, Seoul</p>
+            <p class="is-size-6 text-gray-500">
+                Drag the slider to compare <b>Blurry LR Input</b> vs <b>FMA-Net++</b><br>
+                <span class="is-size-7">(Click to <b>Play/Pause</b>, Scroll/Pinch to <b>Zoom</b>, Drag to <b>Pan</b>)</span>
+            </p>
+          </div>
+
+          <div class="video-container-wrapper">
+              <div class="video-compare-container" id="comparison-viewer">
+                
+                <video id="main_video_source" autoplay loop muted playsinline>
+                    <source src="./static/videos/real_world1.mp4" type="video/mp4">
+                </video>
+
+                <div class="video-layer" id="video-layer-group">
+                    <canvas id="canvas-right"></canvas> <canvas id="canvas-left"></canvas>  </div>
+
+                <div class="ui-layer">
+                    <div id="label-clipper-left" class="label-container">
+                        <div class="video-label label-left">Blurry LR Input</div>
+                    </div>
+                    <div id="label-clipper-right" class="label-container">
+                        <div class="video-label label-right">FMA-Net++</div>
+                    </div>
+                    <div class="slider-bar" id="slider-bar">
+                        <div class="slider-handle"><i class="fas fa-arrows-alt-h"></i></div>
+                    </div>
+                    <div id="scale-indicator" class="scale-indicator">1.0x</div>
+                </div>
+
+                <div class="pause-overlay"><i class="fas fa-pause"></i></div>
+                <div class="zoom-instruction">Scroll/Pinch to Zoom &bull; Drag to Pan</div>
+              </div>
+          </div>
+          
+          <!-- [수정] 탭 컨테이너: JS로 자동 생성 -->
+          <div class="tabs-wrapper">
+              <div id="scene-tabs-container"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Abstract Section -->
+  <section class="section">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered has-text-centered">
+        <div class="column is-four-fifths">
+          <h2 class="title is-3">Abstract</h2>
+          <div class="content has-text-justified">
+            <p>
+              Real-world video restoration is plagued by complex degradations from motion coupled with dynamically varying exposure—a key challenge largely overlooked by prior works and a common artifact of auto-exposure or low-light capture.
+            </p>
+            <p>
+              We present <b>FMA-Net++</b>, a framework for joint video super-resolution and deblurring that explicitly models this coupled effect of motion and dynamically varying exposure. FMA-Net++ adopts a sequence-level architecture built from <b>Hierarchical Refinement with Bidirectional Propagation</b> blocks, enabling parallel, long-range temporal modeling. Within each block, an <b>Exposure Time-aware Modulation</b> layer conditions features on per-frame exposure, which in turn drives an <b>exposure-aware Flow-Guided Dynamic Filtering</b> module to infer motion- and exposure-aware degradation kernels.
+            </p>
+            <p>
+              FMA-Net++ decouples degradation learning from restoration: the former predicts exposure- and motion-aware priors to guide the latter, improving both accuracy and efficiency. To evaluate under realistic capture conditions, we introduce <b>REDS-ME</b> (multi-exposure) and <b>REDS-RE</b> (random-exposure) benchmarks. Trained solely on synthetic data, FMA-Net++ achieves <b>state-of-the-art accuracy and temporal consistency</b> on our new benchmarks and GoPro, outperforming recent methods in both restoration quality and inference speed, and generalizes well to challenging real-world videos.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Proposed Framework Section -->
+  <section class="section">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered has-text-centered">
+        <div class="column is-full-width">
+          <h2 class="title is-3">Proposed Framework</h2>
+          <div class="content has-text-justified">
+            <p>
+              The overall architecture of FMA-Net++. We propose a flow-guided dynamic filtering (FGDF) and iterative feature refinement with multi-attention (FRMA).
+            </p>
+          </div>
+          <img src="./static/images/framework.png" class="interpolation-image" alt="Proposed Framework" style="width: 100%; margin-top: 0px;"/>
+          <p class="is-size-6 has-text-black"><b>Figure 1.</b> Architecture of FMA-Net++.</p>
+        </div>
+      </div>
+
+      <div class="columns is-centered has-text-centered" style="margin-top: 00px;">
+        <div class="column is-full-width"> 
+          <img src="./static/images/hrbp.png" class="interpolation-image hrbp-responsive" alt="HRBP Structure"/>
+          <p class="is-size-6 has-text-black"><b>Figure 2.</b> Structure of the Hierarchical Refinement with Bidirectional Propagation (HRBP) block.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quantitative Results Section -->
+  <section class="section">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered has-text-centered">
+        <div class="column is-full-width">
+          <h2 class="title is-3">Quantitative Results</h2>
+          <div class="content has-text-justified">
+            <p>
+              Comparison with state-of-the-art methods on REDS-ME and REDS-RE benchmarks. FMA-Net++ achieves superior performance while maintaining high efficiency.
+            </p>
+          </div>
+          
+          <div class="columns is-centered">
+             <div class="column is-full-width">
+                <img src="./static/images/quantitative1.png" alt="Quantitative Results 1" style="width: 100%; margin-top: 0px;"/>
+                <p class="is-size-6 has-text-black"><b>Table 1.</b> Quantitative comparison on REDS4-ME-5:4 and REDS4-ME-5:5 dataset.</p>
+             </div>
+          </div>
+
+          <div class="columns is-centered is-vcentered">
+            <div class="column is-half">
+                <img src="./static/images/performance_gain.png" alt="Performance Gain" style="width: 100%; border: 1px solid #f0f0f0; border-radius: 10px;"/>
+                <p class="is-size-6 has-text-black"><b>Figure 3.</b> Performance vs. Runtime (GoPro dataset).</p>
+            </div>
+            <div class="column is-half">
+                <img src="./static/images/quantitative2.png" alt="Quantitative Results 2" style="width: 100%;"/>
+                <p class="is-size-6 has-text-black"><b>Table 2.</b> Quantitative comparison on REDS-RE & GoPro dataset.</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Qualitative Results Section -->
+  <section class="section">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered has-text-centered">
+        <div class="column is-full-width">
+          <h2 class="title is-3">Qualitative Results</h2>
+          <img src="./static/images/qualitative.png" class="interpolation-image" alt="Qualitative Results" style="width: 100%; margin-top: 0px;"/>
+          <p class="is-size-6 has-text-black"><b>Figure 4.</b> Visual comparisons on challenging real-world videos (NIQE&darr; / MUSIQ&uarr;).</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  
+  <!-- Acknowledgement Section -->
+  <!--
+  <section class="section" id="Acknowledgement">
+    <div class="container is-max-desktop content">
+      <h2 class="title">Acknowledgement</h2>
+      <p>
+        This work was supported by the National Research Foundation of Korea (NRF) grant funded by the Korea government (MSIT) (No. ...).
+      </p>
+    </div>
+  </section>
+  -->
+
+  <!-- BibTeX Section -->
+  <section class="section" id="BibTeX">
+    <div class="container is-max-desktop content">
+      <h2 class="title">BibTeX</h2>
+      <pre><code>@article{fmanetpp2026,
+  author    = {Youk, Geunhyuk and Oh, Jihyong and Kim, Munchurl},
+  title     = {FMA-Net++: Motion- and Exposure-Aware Real-World Joint Video Super-Resolution and Deblurring},
+  journal   = {arXiv preprint},
+  year      = {2026},
+}</code></pre>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="content has-text-centered">
+        <div class="columns is-centered">
+          <div class="column is-8">
+            <div class="content">
+              <p>
+                This website is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0 License</a>.
+                <br>
+                Website template adapted from <a href="https://github.com/nerfies/nerfies.github.io">Nerfies</a>.
+                <br>
+                Please visit our <a href="https://github.com/KAIST-VICLab">VIC-Lab</a> for more interesting researches.
+              </p>
+            </div>
+          </div>
+          <a href="https://mapmyvisitors.com/web/1bvps" title="Visit tracker">
+            <img src="https://mapmyvisitors.com/map.png?d=CCp7XZDLhyWJSzjeYxE-PUcQFV7fsl26aISiaMuAwW8&cl=ffffff" />
+          </a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script>
+    const scenes = [
+        "./static/videos/real_world1.mp4",
+        "./static/videos/real_world2.mp4",
+        "./static/videos/real_world3.mp4",
+        //"./static/videos/real_world4.mp4",
+        "./static/videos/real_world5.mp4",
+        //"./static/videos/real_world6.mp4",
+        "./static/videos/real_world7.mp4",
+        "./static/videos/real_world8.mp4",
+    ];
+
+    const container = document.getElementById('comparison-viewer');
+    const video = document.getElementById('main_video_source');
+    
+    // 레이어 참조
+    const videoLayerGroup = document.getElementById('video-layer-group');
+    const canvasLeft = document.getElementById('canvas-left');
+    const canvasRight = document.getElementById('canvas-right');
+    const ctxLeft = canvasLeft.getContext('2d');
+    const ctxRight = canvasRight.getContext('2d');
+    
+    // UI 참조
+    const clipperLabelLeft = document.getElementById('label-clipper-left');
+    const clipperLabelRight = document.getElementById('label-clipper-right');
+    const sliderBar = document.getElementById('slider-bar');
+    const scaleIndicator = document.getElementById('scale-indicator');
+    
+    // --- State Variables ---
+    let sliderPos = 0.5; 
+    let state = { scale: 1, pX: 0, pY: 0 };
+    const MIN_SCALE = 1;
+    const MAX_SCALE = 8;
+
+    // --- Mobile Touch Vars ---
+    let initialPinchDistance = null;
+    let initialScale = 1;
+    let lastTouchX = 0;
+    let lastTouchY = 0;
+    
+    // --- 탭 생성 ---
+    const tabContainer = document.getElementById('scene-tabs-container');
+    tabContainer.innerHTML = '';
+
+    const chunkSize = 4;
+    for (let i = 0; i < scenes.length; i += chunkSize) {
+        const chunk = scenes.slice(i, i + chunkSize);
+        const tabsDiv = document.createElement('div');
+        tabsDiv.className = 'tabs is-centered is-toggle is-rounded';
+        tabsDiv.style.marginBottom = '10px'; 
+        const ul = document.createElement('ul');
+        
+        chunk.forEach((scene, indexInChunk) => {
+            const globalIndex = i + indexInChunk;
+            const li = document.createElement('li');
+            if (globalIndex === 0) li.classList.add('is-active');
+            const a = document.createElement('a');
+            const span = document.createElement('span');
+            span.textContent = `Scene ${globalIndex + 1}`;
+            a.appendChild(span);
+            li.appendChild(a);
+            li.onclick = () => changeScene(globalIndex);
+            ul.appendChild(li);
+        });
+        
+        tabsDiv.appendChild(ul);
+        tabContainer.appendChild(tabsDiv);
+    }
+
+    // --- 드로잉 루프 ---
+    function drawLoop() {
+        if (video.readyState >= 2) { 
+            const isMerged = video.videoWidth > video.videoHeight; 
+            let srcWidth, srcHeight;
+            
+            if (isMerged) {
+                srcWidth = video.videoWidth / 2;
+                srcHeight = video.videoHeight;
+            } else {
+                srcWidth = video.videoWidth;
+                srcHeight = video.videoHeight;
+            }
+            
+            if (canvasLeft.width !== srcWidth || canvasLeft.height !== srcHeight) {
+                canvasLeft.width = srcWidth;
+                canvasLeft.height = srcHeight;
+                canvasRight.width = srcWidth;
+                canvasRight.height = srcHeight;
+                
+                const displayRatio = srcWidth / srcHeight;
+                container.classList.remove('vertical', 'horizontal');
+                if (displayRatio < 0.8) container.classList.add('vertical');
+                else container.classList.add('horizontal');
+            }
+
+            if (isMerged) {
+                ctxLeft.drawImage(video, 0, 0, srcWidth, srcHeight, 0, 0, srcWidth, srcHeight);
+                ctxRight.drawImage(video, srcWidth, 0, srcWidth, srcHeight, 0, 0, srcWidth, srcHeight);
+            } else {
+                ctxLeft.drawImage(video, 0, 0, srcWidth, srcHeight, 0, 0, srcWidth, srcHeight);
+                ctxRight.drawImage(video, 0, 0, srcWidth, srcHeight, 0, 0, srcWidth, srcHeight);
+            }
+        }
+        requestAnimationFrame(drawLoop);
+    }
+    
+    // --- Transform 업데이트 ---
+    function updateTransform() {
+        videoLayerGroup.style.transform = `translate(${state.pX}px, ${state.pY}px) scale(${state.scale})`;
+        
+        const containerWidth = container.offsetWidth; 
+        const sliderScreenX = containerWidth * sliderPos;
+        const clipX = (sliderScreenX - state.pX) / state.scale;
+        
+        canvasLeft.style.clipPath = `polygon(0 0, ${clipX}px 0, ${clipX}px 100%, 0 100%)`;
+        
+        clipperLabelLeft.style.width = (sliderPos * 100) + '%';
+        clipperLabelRight.style.width = ((1 - sliderPos) * 100) + '%';
+        sliderBar.style.left = (sliderPos * 100) + '%';
+        
+        scaleIndicator.textContent = state.scale.toFixed(1) + 'x';
+        scaleIndicator.style.opacity = state.scale > 1.01 ? 1 : 0;
+    }
+
+    // --- [추가] 모바일 터치 이벤트 핸들러 ---
+    container.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 2) {
+            // Pinch Start
+            e.preventDefault();
+            initialPinchDistance = getDistance(e.touches[0], e.touches[1]);
+            initialScale = state.scale;
+        } else if (e.touches.length === 1) {
+            // Pan or Slider Start
+            // 1.0배율일 땐 슬라이더만 작동하도록 함 (UX 분기)
+            if (state.scale > 1.01) {
+                 // Pan 모드
+                 lastTouchX = e.touches[0].clientX;
+                 lastTouchY = e.touches[0].clientY;
+                 container.classList.add('is-dragging'); // 커서 변경 등 시각적 피드백
+            } else {
+                 // Slider 모드: updateSliderFromEvent 호출
+                 updateSliderFromEvent(e.touches[0]);
+            }
+        }
+    }, { passive: false });
+
+    container.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 2 && initialPinchDistance) {
+            // Pinch Zooming
+            e.preventDefault();
+            const currentDistance = getDistance(e.touches[0], e.touches[1]);
+            const scaleChange = currentDistance / initialPinchDistance;
+            const newScale = Math.min(Math.max(MIN_SCALE, initialScale * scaleChange), MAX_SCALE);
+            
+            // 줌 중심점 계산 (두 손가락의 중점)
+            const rect = container.getBoundingClientRect();
+            const centerX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+            const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
+            
+            // 줌 중심 유지하며 스케일 변경
+            const vx = (centerX - state.pX) / state.scale;
+            const vy = (centerY - state.pY) / state.scale;
+            
+            state.scale = newScale;
+            state.pX = centerX - vx * state.scale;
+            state.pY = centerY - vy * state.scale;
+            
+            clampPan();
+            updateTransform();
+        } else if (e.touches.length === 1) {
+            if (state.scale > 1.01) {
+                // Panning
+                e.preventDefault();
+                const dx = e.touches[0].clientX - lastTouchX;
+                const dy = e.touches[0].clientY - lastTouchY;
+                
+                state.pX += dx;
+                state.pY += dy;
+                
+                lastTouchX = e.touches[0].clientX;
+                lastTouchY = e.touches[0].clientY;
+                
+                clampPan();
+                updateTransform();
+            } else {
+                // Slider Moving
+                e.preventDefault(); // 스크롤 방지
+                if (container.contains(e.target)) {
+                    updateSliderFromEvent(e.touches[0]);
+                }
+            }
+        }
+    }, { passive: false });
+    
+    container.addEventListener('touchend', (e) => {
+        initialPinchDistance = null;
+        container.classList.remove('is-dragging');
+    });
+
+    function getDistance(touch1, touch2) {
+        const dx = touch1.clientX - touch2.clientX;
+        const dy = touch1.clientY - touch2.clientY;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
+
+    // --- PC 마우스 이벤트 (기존 유지) ---
+    container.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const rect = container.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+        const delta = -Math.sign(e.deltaY) * 0.5;
+        const newScale = Math.min(Math.max(MIN_SCALE, state.scale + delta), MAX_SCALE);
+        const vx = (mx - state.pX) / state.scale;
+        const vy = (my - state.pY) / state.scale;
+        state.scale = newScale;
+        state.pX = mx - vx * state.scale;
+        state.pY = my - vy * state.scale;
+        clampPan();
+        updateTransform();
+    }, { passive: false });
+
+    let isDragging = false;
+    let lastX = 0, lastY = 0;
+    
+    container.addEventListener('mousedown', (e) => {
+        if (state.scale > 1) {
+            isDragging = true;
+            lastX = e.clientX;
+            lastY = e.clientY;
+            container.classList.add('is-dragging');
+        } else {
+            updateSliderFromEvent(e);
+        }
+    });
+
+    window.addEventListener('mousemove', (e) => {
+        if (isDragging && state.scale > 1) {
+            e.preventDefault();
+            const dx = e.clientX - lastX;
+            const dy = e.clientY - lastY;
+            state.pX += dx;
+            state.pY += dy;
+            lastX = e.clientX;
+            lastY = e.clientY;
+            clampPan();
+            updateTransform();
+        } else {
+            if (container.contains(e.target)) {
+                 updateSliderFromEvent(e);
+            }
+        }
+    });
+
+    window.addEventListener('mouseup', () => {
+        isDragging = false;
+        container.classList.remove('is-dragging');
+    });
+    
+    function clampPan() {
+        const w = container.offsetWidth;
+        const h = container.offsetHeight;
+        const currW = w * state.scale;
+        const currH = h * state.scale;
+        if (currW > w) state.pX = Math.min(0, Math.max(w - currW, state.pX));
+        else state.pX = 0;
+        if (currH > h) state.pY = Math.min(0, Math.max(h - currH, state.pY));
+        else state.pY = 0;
+    }
+    
+    function updateSliderFromEvent(e) {
+        if (state.scale > 1 && (e.buttons === undefined || e.buttons === 1)) return;
+        // 마우스 이벤트 객체든 터치 객체든 clientX, clientY를 가짐
+        const rect = container.getBoundingClientRect();
+        // 범위 체크
+        if (e.clientX < rect.left || e.clientX > rect.right) return;
+        
+        let x = e.clientX - rect.left;
+        sliderPos = x / rect.width;
+        sliderPos = Math.max(0, Math.min(1, sliderPos));
+        updateTransform();
+    }
+
+    let clickStartX = 0;
+    container.addEventListener('mousedown', (e) => clickStartX = e.clientX);
+    container.addEventListener('click', (e) => {
+        if (Math.abs(e.clientX - clickStartX) < 5) {
+            if (video.paused) {
+                video.play();
+                container.classList.remove('paused');
+            } else {
+                video.pause();
+                container.classList.add('paused');
+            }
+        }
+    });
+
+    function changeScene(index) {
+        video.src = scenes[index];
+        video.play().catch(()=>container.classList.add('paused'));
+        container.classList.remove('paused');
+        state = { scale: 1, pX: 0, pY: 0 };
+        updateTransform();
+        document.querySelectorAll('#scene-tabs-container li').forEach((el, i) => {
+            if (i === index) el.classList.add('is-active');
+            else el.classList.remove('is-active');
+        });
+    }
+
+    window.addEventListener('resize', () => {
+        canvasLeft.width = 0; 
+        updateTransform();
+    });
+
+    video.play().catch(()=> container.classList.add('paused'));
+    drawLoop(); 
+
+  </script>
+</body>
+</html>
