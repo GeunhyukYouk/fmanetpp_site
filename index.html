@@ -64,13 +64,14 @@
 
     @keyframes aperture-breathe {
         0% { transform: scale(1) rotate(0deg); }
-        50% { transform: scale(0.92) rotate(15deg); } /* 살짝 조여지며 회전 */
+        50% { transform: scale(0.8) rotate(35deg); } /* 살짝 조여지며 회전 */
         100% { transform: scale(1) rotate(0deg); }
     }
     
     /* 애니메이션 클래스 적용 */
-    .aperture-icon svg {
-        animation: aperture-breathe 4s ease-in-out infinite;
+    .aperture-icon .aperture-blades {
+        transform-box: view-box;
+        animation: aperture-breathe 2.4s ease-in-out infinite;
         transform-origin: center; 
     }
 
@@ -230,15 +231,17 @@
           <div class="column has-text-centered">
             
             <h1 class="title publication-title" style="font-weight: 800; font-size: 2.4rem;">
-              <span class="icon" style="color: #7c3aed; vertical-align: middle; margin-right: 0px; font-size: 0.9em; width: 1em; height: 1em; position: relative; top: -2px;">
+              <span class="icon aperture-icon" style="color: #7c3aed; vertical-align: middle; margin-right: 0px; font-size: 0.9em; width: 1em; height: 1em; position: relative; top: -2px;">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: 100%;">
                     <circle cx="12" cy="12" r="10"></circle>
+                    <g class="aperture-blades">
                     <line x1="14.31" y1="8" x2="20.05" y2="17.94"></line>
                     <line x1="9.69" y1="8" x2="21.17" y2="8"></line>
                     <line x1="7.38" y1="12" x2="13.12" y2="2.06"></line>
                     <line x1="9.69" y1="16" x2="3.95" y2="6.06"></line>
                     <line x1="14.31" y1="16" x2="2.83" y2="16"></line>
                     <line x1="16.62" y1="12" x2="10.88" y2="21.94"></line>
+                    </g>
                   </svg>
               </span>
               
